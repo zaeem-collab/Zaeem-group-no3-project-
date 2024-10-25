@@ -1,0 +1,512 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class Product
+{
+    public int ID { get; set; }
+    public string Name { get; set; }
+    public decimal Price { get; set; }
+
+    public Product(int id, string name, decimal price)
+    {
+        ID = id;
+        Name = name;
+        Price = price;
+    }
+}
+
+public class CartItem
+{
+    public Product Product { get; set; }
+    public int Quantity { get; set; }
+
+    public CartItem(Product product, int quantity)
+    {
+        Product = product;
+        Quantity = quantity;
+    }
+
+    public decimal GetTotalPrice()
+    {
+        return Product.Price * Quantity;
+    }
+}
+
+public class ShoppingCart
+{
+    private List<CartItem> items = new List<CartItem>();
+    private decimal discount = 0.1M; // 10% discount
+    private decimal salesTax = 0.07M; // 7% sales tax
+
+    public void AddItem(Product product, int quantity)
+    {
+        var item = items.FirstOrDefault(i => i.Product.ID == product.ID);
+        if (item == null)
+        {
+            items.Add(new CartItem(product, quantity));
+        }
+        else
+        {
+            item.Quantity += quantity;
+        }
+    }
+
+    public void RemoveItem()
+    {
+        bool removingMore = true; 
+
+        while (removingMore)
+        {
+            Console.Write("Enter the Product Name to remove from cart (or press 0 to exit): ");
+            string productName = Console.ReadLine();
+
+            if (productName == "0")
+            {
+                Console.WriteLine("Exiting remove item function.");
+                break; 
+            }
+
+            var item = items.FirstOrDefault(i => i.Product.Name.Equals(productName, StringComparison.OrdinalIgnoreCase));
+
+            if (item != null)
+            {
+                items.Remove(item);
+                Console.WriteLine($"Product '{productName}' has been successfully removed from the cart.");
+
+            
+                Console.Write("Do you want to remove more products? (yes/no): ");
+                string response = Console.ReadLine();
+                if (response?.ToLower() == "no")
+                {
+                    removingMore = false; 
+                    Console.WriteLine("Exiting remove item function.");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Product '{productName}' not found in the cart. Please enter a valid product name.");
+            }
+        }
+    }
+
+    public void ViewCart()
+    {
+        if (items.Count == 0)
+        {
+            Console.WriteLine("\nYour cart is empty.");
+            return;
+        }
+
+        Console.WriteLine("\n+------------------------------------------------+");
+        Console.WriteLine("|              Items in Your Cart                |");
+        Console.WriteLine("+------------------------------------------------+");
+        Console.WriteLine("| Product Name              | Quantity |  Price  |");
+        Console.WriteLine("+---------------------------+----------+---------+");
+
+        foreach (var item in items)
+        {
+            string productName = item.Product.Name;
+            int quantity = item.Quantity;
+            decimal totalPrice = item.GetTotalPrice();
+
+            
+            Console.WriteLine($"| {productName,-25} | {quantity,8} | {totalPrice,7:C} |");
+        }
+
+        Console.WriteLine("+---------------------------+----------+---------+");
+        Console.WriteLine($"| Total Cost: {GetTotalCost(),27:C} |");
+        Console.WriteLine("+------------------------------------------------+\n");
+    }
+
+
+    public decimal GetTotalCost()
+    {
+        decimal totalCost = items.Sum(i => i.GetTotalPrice());
+        return totalCost + (totalCost * salesTax) - (totalCost * discount);
+    }
+
+    public void Checkout()
+    {
+        if (items.Count == 0)
+        {
+            Console.WriteLine("\nYour cart is empty. Please add items to the cart before checking out.");
+            return; 
+        }
+
+        Console.WriteLine("\n+----------------------------------------------+");
+        Console.WriteLine("|                  Checkout                    |");
+        Console.WriteLine("+----------------------------------------------+");
+
+       
+        ViewCart();
+
+        Console.WriteLine("+----------------------------------------------+");
+        Console.WriteLine("| Confirm Your Order                           |");
+        Console.WriteLine("+----------------------------------------------+");
+
+        Console.Write("Enter 1 to confirm checkout (or press 0 to exit): ");
+        string input = Console.ReadLine();
+
+        if (input == "1")
+        {
+            Console.WriteLine("\n+----------------------------------------------+");
+            Console.WriteLine("|            Checkout Successful!              |");
+            Console.WriteLine("|    Thank you for your purchase!              |");
+            Console.WriteLine("+----------------------------------------------+");
+
+            items.Clear(); // Clear the cart after checkout
+        }
+        else if (input == "0")
+        {
+            Console.WriteLine("\nExiting checkout process.");
+        }
+        else
+        {
+            Console.WriteLine("\nInvalid input. Checkout canceled.");
+        }
+    }
+
+
+    public void ProductRecommendations()
+    {
+        var recommendations = new List<Product>
+    {
+        new Product(4, "Wireless Mouse", 25.00M),
+        new Product(5, "16GB USB Drive", 10.00M),
+        new Product(6, "Wireless Keyboard", 45.00M),
+        new Product(7, "Laptop Stand", 35.00M),
+        new Product(8, "Noise Cancelling Headphones", 150.00M),
+        new Product(9, "Portable Power Bank", 30.00M),
+        new Product(10, "4K Webcam", 85.00M)
+    };
+
+        bool addingMore = true; 
+
+        while (addingMore)
+        {
+            Console.WriteLine("You might also like:");
+            for (int i = 0; i < recommendations.Count; i++)
+            {
+                Console.WriteLine("+----------------------------------------------------------+");
+                Console.WriteLine($"{i + 1,-2} - {recommendations[i].Name,-30} | {recommendations[i].Price,7:C}");
+
+            }
+
+            int choice = -1;
+            while (true)
+            {
+                Console.Write("Enter the number of the product you want to add to your cart, or 0 to exit: ");
+                if (int.TryParse(Console.ReadLine(), out choice) && choice >= 0 && choice <= recommendations.Count)
+                {
+                    if (choice == 0)
+                    {
+                        Console.WriteLine("Exiting product recommendations.");
+                        addingMore = false;
+                        break;
+                    }
+
+                    Console.Write("Enter quantity to add: ");
+                    if (int.TryParse(Console.ReadLine(), out int quantity) && quantity > 0)
+                    {
+                        AddItem(recommendations[choice - 1], quantity);
+                        Console.WriteLine($"{quantity} of '{recommendations[choice - 1].Name}' added to cart.");
+
+                     
+                        Console.Write("Do you want to add more products? (yes/no): ");
+                        string response = Console.ReadLine();
+                        if (response?.ToLower() == "no")
+                        {
+                            addingMore = false; 
+                            Console.WriteLine("Exiting product recommendations.");
+                        }
+                        break; 
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid quantity. Please enter a positive number.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Invalid choice. Please enter a valid number.");
+                }
+            }
+        }
+    }
+
+}
+public class User
+{
+    public string Username { get; set; }
+    public string Password { get; set; }
+
+    public User(string username, string password)
+    {
+        Username = username;
+        Password = password;
+    }
+}
+
+public class Program
+{
+  
+    private static List<User> users = new List<User>();
+
+    private static bool Login(string username, string password)
+    {
+        var user = users.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+
+        if (user == null)
+        {
+
+            Console.WriteLine("Username not found. Please check your username.");
+            return false; // User does not exist
+        }
+
+        if (user.Password == password)
+        {
+            return true; // Successful login
+        }
+        else
+        {
+            Console.WriteLine("Invalid password. Please try again.");
+            return false; // Incorrect password
+        }
+    }
+
+    private static void Signup(string username, string password)
+    {
+        if (users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
+        {
+            Console.WriteLine("Username already exists. Please try a different one.");
+        }
+        else
+        {
+            users.Add(new User(username, password));
+            Console.WriteLine("Signup successful! You can now log in.");
+        }
+    }
+
+    private static void ForgotPassword(string username)
+    {
+        var user = users.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        if (user != null)
+        {
+            Console.Write("Enter a new password: ");
+            string newPassword = Console.ReadLine();
+            user.Password = newPassword;
+            Console.WriteLine("Password has been reset successfully.");
+        }
+        else
+        {
+            Console.WriteLine("Username not found.");
+        }
+    }
+
+    public static void Main(string[] args)
+    {
+        bool loggedIn = false;
+
+        while (!loggedIn)
+        {
+            Console.WriteLine("+--------------------------------------+");
+            Console.WriteLine("|            Welcome! Please           |");
+            Console.WriteLine("|          Choose an Option:           |");
+            Console.WriteLine("+--------------------------------------+");
+            Console.WriteLine("|  1 - Login                           |");
+            Console.WriteLine("|  2 - Signup                          |");
+            Console.WriteLine("|  3 - Forgot Password                 |");
+            Console.WriteLine("|  4 - Exit                            |");
+            Console.WriteLine("+--------------------------------------+");
+
+
+            if (int.TryParse(Console.ReadLine(), out int option))
+            {
+                switch (option)
+                {
+                    case 1: // Login
+                        Console.Write("Username: ");
+                        string username = Console.ReadLine();
+                        Console.Write("Password: ");
+                        string password = Console.ReadLine();
+
+                        if (Login(username, password))
+                        {
+                            loggedIn = true;
+                            Console.WriteLine($"Welcome, {username}!");
+                            ShoppingMenu();
+                        }
+                        break;
+
+                    case 2: // Signup
+                        Console.Write("Choose a username: ");
+                        string newUsername = Console.ReadLine();
+                        Console.Write("Choose a password: ");
+                        string newPassword = Console.ReadLine();
+                        Signup(newUsername, newPassword);
+                        break;
+
+                    case 3: // Forgot Password
+                        Console.Write("Enter your username: ");
+                        string forgotUsername = Console.ReadLine();
+                        ForgotPassword(forgotUsername);
+                        break;
+
+                    case 4: // Exit
+                        Console.WriteLine("Thank you for visiting!");
+                        return;
+
+                    default:
+                        Console.WriteLine("Invalid option. Please try again.");
+                        break;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid input. Please enter a number.");
+            }
+        }
+    }
+
+    private static void ShoppingMenu()
+    {
+      
+        Product product1 = new Product(1, "Laptop", 999.99M);
+        Product product2 = new Product(2, "Smartphone", 699.99M);
+        Product product3 = new Product(3, "Headphones", 199.99M);
+        Product product4 = new Product(4, "Mouse", 49.99M);
+        Product product5 = new Product(5, "Keyboard", 79.99M);
+        Product product6 = new Product(6, "Monitor", 299.99M);
+        Product product7 = new Product(7, "Printer", 149.99M);
+        Product product8 = new Product(8, "Tablet", 399.99M);
+        Product product9 = new Product(9, "External Hard Drive", 89.99M);
+        Product product10 = new Product(10, "USB Flash Drive", 19.99M);
+        Product product11 = new Product(11, "Smartwatch", 199.99M);
+        Product product12 = new Product(12, "Webcam", 99.99M);
+        Product product13 = new Product(13, "Router", 129.99M);
+        Product product14 = new Product(14, "Bluetooth Speaker", 79.99M);
+        Product product15 = new Product(15, "Game Console", 499.99M);
+
+        ShoppingCart cart = new ShoppingCart();
+
+        bool shopping = true;
+
+        while (shopping)
+        {
+            Console.WriteLine("\n+----------------------------------------------+");
+            Console.WriteLine("|                Choose an Action              |");
+            Console.WriteLine("+----------------------------------------------+");
+            Console.WriteLine("|  1 - Add Item to Cart                        |");
+            Console.WriteLine("|  2 - Remove Item from Cart                   |");
+            Console.WriteLine("|  3 - View Cart                               |");
+            Console.WriteLine("|  4 - Product Recommendations                 |");
+            Console.WriteLine("|  5 - Checkout                                |");
+            Console.WriteLine("|  6 - Exit                                    |");
+            Console.WriteLine("+----------------------------------------------+");
+
+
+            if (int.TryParse(Console.ReadLine(), out int choice))
+            {
+                switch (choice)
+                {
+                    case 1:
+                        AddItemToCart(cart, product1, product2, product3, product4, product5, product6, product7, product8, product9, product10, product11, product12, product13, product14, product15);
+                        break;
+
+                    case 2:
+                        cart.RemoveItem();
+                        break;
+
+                    case 3:
+                        cart.ViewCart();
+                        break;
+
+                    case 4:
+                        cart.ProductRecommendations();
+                        break;
+
+                    case 5:
+                        cart.Checkout();
+                        break;
+
+                    case 6:
+                        shopping = false;
+                        Console.WriteLine("Thank you for shopping!");
+                        break;
+
+                    default:
+                        Console.WriteLine("Invalid choice. Please try again.");
+                        break;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid input. Please enter a number.");
+            }
+        }
+    }
+
+ 
+    private static void AddItemToCart(ShoppingCart cart, params Product[] products)
+    {
+        bool addingMore = true;
+
+        while (addingMore)
+        {
+            Console.WriteLine("Select a product to add:");
+            for (int i = 0; i < products.Length; i++)
+            {
+                Console.WriteLine("+----------------------------------------------------------+");
+                Console.WriteLine($"{i + 1,-2} - {products[i].Name,-30} | {products[i].Price,7:C}");
+
+            }
+
+            if (int.TryParse(Console.ReadLine(), out int productChoice) && productChoice >= 1 && productChoice <= products.Length)
+            {
+                Product selectedProduct = products[productChoice - 1];
+
+                while (true)
+                {
+                    Console.Write($"Enter quantity to add for {selectedProduct.Name} (or press 0 to exit): ");
+                    if (int.TryParse(Console.ReadLine(), out int quantity))
+                    {
+                        if (quantity == 0)
+                        {
+                            Console.WriteLine("Exiting add item function.");
+                            addingMore = false;
+                            break;
+                        }
+
+                        if (quantity > 0)
+                        {
+                            cart.AddItem(selectedProduct, quantity);
+                            Console.WriteLine($"{quantity} of '{selectedProduct.Name}' added to cart.");
+
+                            Console.Write("Do you want to add more products? (yes/no): ");
+                            string response = Console.ReadLine();
+                            if (response?.ToLower() == "no")
+                            {
+                                addingMore = false;
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Please enter a positive quantity.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid input. Please enter a number.");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid selection. Please try again.");
+            }
+        }
+    }
+
+}
